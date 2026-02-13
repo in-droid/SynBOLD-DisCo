@@ -109,6 +109,7 @@ RUN mkdir /INPUTS && \
     mkdir /OUTPUTS
 
 COPY src /home
+COPY run_pipeline.sh /home
 
 SHELL ["/bin/bash", "-c"]
-ENTRYPOINT ["/home/pipeline.sh"]
+ENTRYPOINT ["/home/run_pipeline.sh"]

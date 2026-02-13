@@ -3,12 +3,13 @@
 exec &> /OUTPUTS/output.log
 
 total_readout_time=0.05
-
+pe_dir="AP"
 TOPUP=true
 motion_corrected=false
 skull_stripped=false
 custom_cnf=false
 no_smoothing=false
+PY=/opt/miniconda3/bin/python
 
 echo "Flag(s) received:"
 if [ $# -eq 0 ]; then
@@ -22,6 +23,15 @@ for ((i=1; i<=$#; i++)); do
     case $arg in
         -nt|--no_topup)
             TOPUP=false
+            ;;
+        --pe_dir)
+            ((i++))
+            if [ $i -le $# ]; then
+                pe_dir=${!i}
+            else
+                echo "Error: Missing value for --pe_dir"
+                exit 1
+            fi
             ;;
         -mc|--motion_corrected)
             motion_corrected=true
@@ -54,14 +64,17 @@ echo "  Skull Stripped: $skull_stripped"
 echo "  Custom Cnf: $custom_cnf"
 echo "  No Smoothing: $no_smoothing"
 echo "  Total Readout Time: $total_readout_time"
+echo "  PE Direction: $pe_dir"
 
 # setup freesurfer
 source $FREESURFER_HOME/SetUpFreeSurfer.sh
-source activate /opt/miniconda3
+# setup python environment
+source /opt/miniconda3/etc/profile.d/conda.sh
+conda activate /opt/miniconda3
 
 cd /INPUTS
 
-# check file existence
+check file existence
 if [ ! -f T1.nii.gz ]; then
     echo "T1.nii.gz not found"
     exit 1
@@ -132,7 +145,7 @@ mri_convert ${RESULTS_PATH}/T1_norm.mgz ${RESULTS_PATH}/T1_norm.nii.gz
 
 # Skull strip T1
 echo -------
-if $skull_stripped; then
+if [[ "$skull_stripped" == "true" ]]; then
     echo Copying user-provided T1 Mask
     cp $T1_PATH ${RESULTS_PATH}/T1_mask.nii.gz
 else
@@ -204,7 +217,7 @@ NUM_FOLDS=5
 for i in $(seq 1 $NUM_FOLDS);
 do 
   echo Performing inference on FOLD: "$i"
-  python3 /home/inference.py \
+  $PY /home/inference.py \
         T1_norm_lin_atlas_2_5.nii.gz \
         BOLD_d_3D_lin_atlas_2_5.nii.gz \
         BOLD_s_3D_lin_atlas_2_5_FOLD_$i.nii.gz \
@@ -237,7 +250,19 @@ else
 fi
 
 if $TOPUP; then
-    echo -e "0 1 0 ${total_readout_time}\n0 1 0 0" > acqparams.txt
+   pe_sign=1
+    if [[ "$pe_dir" == "AP" ]]; then
+        pe_sign=1
+    elif [[ "$pe_dir" == "PA" ]]; then
+        pe_sign=-1
+    else
+        echo "Invalid PE direction: $pe_dir. Expected 'AP' or 'PA'."
+        exit 1
+    fi
+
+    # Distorted image line uses correct PE sign and readout time.
+    # Synthetic image uses same PE sign but zero readout time ("infinite bandwidth").
+    echo -e "0 ${pe_sign} 0 ${total_readout_time}\n0 ${pe_sign} 0 0" > acqparams.txt
 
     data_matrix=($(mrinfo $BOLD_PATH -size))
     all_even=true

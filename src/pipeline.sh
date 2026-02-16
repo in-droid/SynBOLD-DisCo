@@ -217,7 +217,7 @@ NUM_FOLDS=5
 for i in $(seq 1 $NUM_FOLDS);
 do 
   echo Performing inference on FOLD: "$i"
-  $PY /home/inference.py \
+  conda run -p /opt/miniconda3 python /home/inference.py \
         T1_norm_lin_atlas_2_5.nii.gz \
         BOLD_d_3D_lin_atlas_2_5.nii.gz \
         BOLD_s_3D_lin_atlas_2_5_FOLD_$i.nii.gz \

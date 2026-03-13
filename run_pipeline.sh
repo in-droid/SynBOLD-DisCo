@@ -2,10 +2,10 @@
 set -euo pipefail
 
 # Cohort root contains subject dirs like HCA9816395_V2_MR/
-COHORT_ROOT="${1:-/shared/workspace/lpv/synthetic_field_maps_ivan/data/synthetic_field_maps_full/synthetic_field_maps_full/}"
+COHORT_ROOT="${1:-/shared/workspace/lpv/synthetic_field_maps_ivan/data/unprocessed_synthbold_format/hca}"
 
 # Optional: file with subject IDs (one per line). If not provided, run all subject dirs under COHORT_ROOT.
-SUBJ_LIST="${2:-/shared/workspace/lpv/synthetic_field_maps_ivan/data/synthetic_field_maps_full/test_sample.txt}"
+SUBJ_LIST="${2:-}"
 
 # Path to your pipeline script inside the container
 PIPELINE="${3:-./src/pipeline.sh}"
@@ -15,7 +15,7 @@ PIPELINE_FLAGS=( --total_readout_time 0.058 )
 # (We intentionally do NOT set: --skull_stripped, --motion_corrected, --no_smoothing, --no_topup)
 
 # Where to store permanent outputs
-OUT_ROOT="${OUT_ROOT:-/shared/workspace/lpv/synthetic_field_maps_ivan/results/Synth-Bold-Disco}"
+OUT_ROOT="${OUT_ROOT:-/shared/workspace/lpv/synthetic_field_maps_ivan/results/Synth-Bold-Disco-unprocessed/hca/}"
 mkdir -p "$OUT_ROOT"
 
 run_one () {

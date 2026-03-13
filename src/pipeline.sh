@@ -74,7 +74,7 @@ conda activate /opt/miniconda3
 
 cd /INPUTS
 
-check file existence
+# check file existence
 if [ ! -f T1.nii.gz ]; then
     echo "T1.nii.gz not found"
     exit 1
@@ -217,7 +217,7 @@ NUM_FOLDS=5
 for i in $(seq 1 $NUM_FOLDS);
 do 
   echo Performing inference on FOLD: "$i"
-  conda run -p /opt/miniconda3 python /home/inference.py \
+  $PY /home/inference.py \
         T1_norm_lin_atlas_2_5.nii.gz \
         BOLD_d_3D_lin_atlas_2_5.nii.gz \
         BOLD_s_3D_lin_atlas_2_5_FOLD_$i.nii.gz \
@@ -250,19 +250,25 @@ else
 fi
 
 if $TOPUP; then
-   pe_sign=1
     if [[ "$pe_dir" == "AP" ]]; then
-        pe_sign=1
+        acq_line="0 1 0 ${total_readout_time}"
+        syn_line="0 1 0 0"
     elif [[ "$pe_dir" == "PA" ]]; then
-        pe_sign=-1
+        acq_line="0 -1 0 ${total_readout_time}"
+        syn_line="0 -1 0 0"
+    elif [[ "$pe_dir" == "LR" ]]; then
+        acq_line="1 0 0 ${total_readout_time}"
+        syn_line="1 0 0 0"
+    elif [[ "$pe_dir" == "RL" ]]; then
+        acq_line="-1 0 0 ${total_readout_time}"
+        syn_line="-1 0 0 0"
     else
-        echo "Invalid PE direction: $pe_dir. Expected 'AP' or 'PA'."
+        echo "Invalid PE direction: $pe_dir. Expected AP, PA, LR, or RL."
         exit 1
     fi
-
     # Distorted image line uses correct PE sign and readout time.
     # Synthetic image uses same PE sign but zero readout time ("infinite bandwidth").
-    echo -e "0 ${pe_sign} 0 ${total_readout_time}\n0 ${pe_sign} 0 0" > acqparams.txt
+    echo -e "${acq_line}\n${syn_line}" > acqparams.txt
 
     data_matrix=($(mrinfo $BOLD_PATH -size))
     all_even=true
